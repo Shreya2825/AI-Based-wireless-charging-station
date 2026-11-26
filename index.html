@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Smart EV Charging Station | Intelligent Dashboard</title>
+  <meta name="description" content="AI-powered smart EV charging ecosystem with real-time load optimization, dynamic pricing, battery health prediction, and safety monitoring." />
+  <link rel="stylesheet" href="style.css" />
+  <!-- Leaflet Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- Leaflet -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+
+<!-- ── Loading Overlay ──────────────────────────────────────────────────── -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-logo">⚡ EV·AI</div>
+  <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+  <div class="loading-text">Initializing AI Systems…</div>
+</div>
+
+<!-- ── Navbar ───────────────────────────────────────────────────────────── -->
+<nav class="navbar">
+  <a class="navbar-brand" href="#">
+    <div class="logo-icon">⚡</div>
+    <h1>EV·AI CHARGING</h1>
+  </a>
+  <div class="navbar-status">
+    <span id="live-clock" style="font-family:'Orbitron',sans-serif;font-size:0.85rem;color:#8899b8;"></span>
+    <div class="status-chip">
+      <span class="pulse-dot"></span>
+      LIVE SYSTEM
+    </div>
+  </div>
+</nav>
+
+<!-- ── Main ─────────────────────────────────────────────────────────────── -->
+<div class="main-wrapper">
+
+  <!-- KPI CARDS -->
+  <div class="section-header">
+    <span class="section-icon">📊</span>
+    <h2>Live System Overview</h2>
+    <div class="section-divider"></div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card glass glass-hover" style="--card-accent:var(--gradient-cyan)">
+      <span class="kpi-icon" style="color:var(--accent-cyan)">⚡</span>
+      <div class="kpi-label">Current Load</div>
+      <div class="kpi-value"><span id="kpi-load">--</span><span class="kpi-unit">kW</span></div>
+      <div class="kpi-sub">Grid capacity: 12,000 kW</div>
+      <span class="kpi-badge badge-cyan" id="kpi-load-status">Loading…</span>
+    </div>
+    <div class="kpi-card glass glass-hover" style="--card-accent:var(--gradient-green)">
+      <span class="kpi-icon" style="color:var(--accent-green)">🔋</span>
+      <div class="kpi-label">Avg Battery Health</div>
+      <div class="kpi-value"><span id="kpi-health">--</span><span class="kpi-unit">%</span></div>
+      <div class="kpi-sub">Fleet average across all sessions</div>
+      <span class="kpi-badge badge-green" id="kpi-health-badge">Good</span>
+    </div>
+    <div class="kpi-card glass glass-hover" style="--card-accent:var(--gradient-warn)">
+      <span class="kpi-icon" style="color:var(--accent-orange)">💰</span>
+      <div class="kpi-label">Current Price</div>
+      <div class="kpi-value">₹<span id="kpi-price">--</span><span class="kpi-unit">/kWh</span></div>
+      <div class="kpi-sub">Dynamic AI-based pricing</div>
+      <span class="kpi-badge badge-yellow" id="kpi-price-tier">Standard</span>
+    </div>
+    <div class="kpi-card glass glass-hover" style="--card-accent:var(--gradient-purple)">
+      <span class="kpi-icon" style="color:#a855f7">🚗</span>
+      <div class="kpi-label">Active Sessions</div>
+      <div class="kpi-value"><span id="kpi-sessions">--</span></div>
+      <div class="kpi-sub"><span id="kpi-available">--</span> stations available</div>
+      <span class="kpi-badge badge-cyan">Real-time</span>
+    </div>
+    <div class="kpi-card glass glass-hover" style="--card-accent:var(--gradient-green)">
+      <span class="kpi-icon" style="color:var(--accent-green)">🌿</span>
+      <div class="kpi-label">Carbon Saved</div>
+      <div class="kpi-value"><span id="kpi-carbon">--</span><span class="kpi-unit">kg</span></div>
+      <div class="kpi-sub">Via V2G + off-peak charging</div>
+      <span class="kpi-badge badge-green">Eco Mode</span>
+    </div>
+    <div class="kpi-card glass glass-hover" style="--card-accent:var(--gradient-cyan)">
+      <span class="kpi-icon" style="color:var(--accent-cyan)">🔁</span>
+      <div class="kpi-label">V2G Energy</div>
+      <div class="kpi-value"><span id="kpi-v2g">--</span><span class="kpi-unit">kW</span></div>
+      <div class="kpi-sub">Energy fed back to grid</div>
+      <span class="kpi-badge badge-cyan">Bidirectional</span>
+    </div>
+  </div>
+
+  <!-- GAUGES -->
+  <div class="section-header" style="margin-top:36px">
+    <span class="section-icon">🎯</span>
+    <h2>Real-Time Gauges</h2>
+    <div class="section-divider"></div>
+  </div>
+  <div class="gauge-grid">
+    <div class="gauge-card glass glass-hover">
+      <div class="gauge-wrapper">
+        <canvas id="gauge-load"></canvas>
+        <div class="gauge-center-text">
+          <div class="gauge-val" id="gauge-load-val">--</div>
+          <div class="gauge-pct">%</div>
+        </div>
+      </div>
+      <div class="gauge-label">Grid Load</div>
+    </div>
+    <div class="gauge-card glass glass-hover">
+      <div class="gauge-wrapper">
+        <canvas id="gauge-health"></canvas>
+        <div class="gauge-center-text">
+          <div class="gauge-val" id="gauge-health-val">--</div>
+          <div class="gauge-pct">%</div>
+        </div>
+      </div>
+      <div class="gauge-label">Battery Health</div>
+    </div>
+    <div class="gauge-card glass glass-hover">
+      <div class="gauge-wrapper">
+        <canvas id="gauge-price"></canvas>
+        <div class="gauge-center-text">
+          <div class="gauge-val" id="gauge-price-val">--</div>
+          <div class="gauge-pct">₹/kWh</div>
+        </div>
+      </div>
+      <div class="gauge-label">Charging Price</div>
+    </div>
+    <div class="gauge-card glass glass-hover">
+      <div class="gauge-wrapper">
+        <canvas id="gauge-thermal"></canvas>
+        <div class="gauge-center-text">
+          <div class="gauge-val" id="gauge-thermal-val">--</div>
+          <div class="gauge-pct">risk</div>
+        </div>
+      </div>
+      <div class="gauge-label">Thermal Risk</div>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="section-header" style="margin-top:36px">
+    <span class="section-icon">📈</span>
+    <h2>Analytics & Forecasting</h2>
+    <div class="section-divider"></div>
+  </div>
+  <div class="charts-grid">
+    <div class="chart-card glass">
+      <h3>⚡ Grid Load Trend (24h)</h3>
+      <canvas id="chart-load"></canvas>
+    </div>
+    <div class="chart-card glass">
+      <h3>💰 Price Fluctuation (24h)</h3>
+      <canvas id="chart-price"></canvas>
+    </div>
+    <div class="chart-card glass">
+      <h3>🔮 LSTM Demand Forecast — Actual vs Predicted</h3>
+      <canvas id="chart-lstm"></canvas>
+    </div>
+    <div class="chart-card glass">
+      <h3>🔋 Battery Health Distribution</h3>
+      <canvas id="chart-health-dist"></canvas>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div class="section-header" style="margin-top:36px">
+    <span class="section-icon">🗺️</span>
+    <h2>Live Station Map</h2>
+    <div class="section-divider"></div>
+  </div>
+  <div class="map-card glass">
+    <h3>📍 Charging Stations — Real-Time Availability</h3>
+    <div id="map-container"></div>
+  </div>
+
+  <!-- STATION TABLE -->
+  <div class="section-header" style="margin-top:36px">
+    <span class="section-icon">🏪</span>
+    <h2>Station Directory</h2>
+    <div class="section-divider"></div>
+  </div>
+  <div class="station-table-card glass">
+    <h3>📋 All Charging Stations</h3>
+    <div class="table-wrap">
+      <table id="station-table">
+        <thead>
+          <tr>
+            <th>Station ID</th><th>Lat / Lon</th><th>Avg Load (kW)</th>
+            <th>Price (₹/kWh)</th><th>Sessions</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="station-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- AI PREDICTION PANELS -->
+  <div class="section-header" style="margin-top:36px">
+    <span class="section-icon">🤖</span>
+    <h2>AI Prediction Engine</h2>
+    <div class="section-divider"></div>
+  </div>
+  <div class="predict-grid">
+
+    <!-- Battery Health -->
+    <div class="predict-card glass">
+      <h3>🔋 Battery Health Predictor</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Battery Level (%)</label>
+          <input class="form-control" id="h-battery" type="number" value="65" min="5" max="100" />
+        </div>
+        <div class="form-group">
+          <label>Charging Cycles</label>
+          <input class="form-control" id="h-cycles" type="number" value="350" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Temperature (°C)</label>
+          <input class="form-control" id="h-temp" type="number" value="32" />
+        </div>
+        <div class="form-group">
+          <label>Voltage (V)</label>
+          <input class="form-control" id="h-voltage" type="number" value="400" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Energy Consumed (kWh)</label>
+          <input class="form-control" id="h-energy" type="number" value="25" />
+        </div>
+        <div class="form-group">
+          <label>Thermal Risk Score</label>
+          <input class="form-control" id="h-thermal" type="number" value="20" />
+        </div>
+      </div>
+      <button class="btn-predict btn-cyan" id="btn-health" onclick="predictHealth()">
+        ⚡ Predict Battery Health
+      </button>
+      <div class="result-box" id="result-health"></div>
+    </div>
+
+    <!-- Price & Load -->
+    <div class="predict-card glass">
+      <h3>💰 Price & Load Predictor</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Time of Day (0–23)</label>
+          <input class="form-control" id="p-hour" type="number" value="18" min="0" max="23" />
+        </div>
+        <div class="form-group">
+          <label>Day of Week (0=Mon)</label>
+          <input class="form-control" id="p-dow" type="number" value="2" min="0" max="6" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Grid Demand (kW)</label>
+          <input class="form-control" id="p-grid" type="number" value="7000" />
+        </div>
+        <div class="form-group">
+          <label>Current Load (kW)</label>
+          <input class="form-control" id="p-load" type="number" value="4500" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Battery Health (%)</label>
+          <input class="form-control" id="p-health" type="number" value="80" />
+        </div>
+        <div class="form-group">
+          <label>Station ID (0–9)</label>
+          <input class="form-control" id="p-station" type="number" value="3" />
+        </div>
+      </div>
+      <button class="btn-predict btn-green" onclick="predictPriceLoad()">
+        💰 Predict Price &amp; Load
+      </button>
+      <div class="result-box" id="result-price"></div>
+    </div>
+
+    <!-- Nearest Station Finder -->
+    <div class="predict-card glass">
+      <h3>📍 Nearest Station Finder</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Your Latitude</label>
+          <input class="form-control" id="ns-lat" type="number" value="28.6100" step="0.0001" />
+        </div>
+        <div class="form-group">
+          <label>Your Longitude</label>
+          <input class="form-control" id="ns-lon" type="number" value="77.2100" step="0.0001" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Show Top N Stations</label>
+        <input class="form-control" id="ns-topk" type="number" value="3" min="1" max="10" />
+      </div>
+      <button class="btn-predict btn-cyan" onclick="findNearestStation()">
+        🗺️ Find Nearest Stations
+      </button>
+      <div class="result-box" id="result-station"></div>
+    </div>
+
+    <!-- Thermal Safety -->
+    <div class="predict-card glass">
+      <h3>🌡️ Thermal Safety Predictor</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Temperature (°C)</label>
+          <input class="form-control" id="t-temp" type="number" value="38" />
+        </div>
+        <div class="form-group">
+          <label>Voltage (V)</label>
+          <input class="form-control" id="t-voltage" type="number" value="415" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Battery Health (%)</label>
+          <input class="form-control" id="t-health" type="number" value="75" />
+        </div>
+        <div class="form-group">
+          <label>Charging Cycles</label>
+          <input class="form-control" id="t-cycles" type="number" value="500" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Current Load (kW)</label>
+          <input class="form-control" id="t-load" type="number" value="3000" />
+        </div>
+        <div class="form-group">
+          <label>Energy Consumed (kWh)</label>
+          <input class="form-control" id="t-energy" type="number" value="30" />
+        </div>
+      </div>
+      <button class="btn-predict btn-warn" onclick="predictThermal()">
+        🚨 Check Thermal Safety
+      </button>
+      <div class="result-box" id="result-thermal"></div>
+    </div>
+  </div>
+
+  <!-- SAFETY MODULE -->
+  <div class="section-header" style="margin-top:36px">
+    <span class="section-icon">🛡️</span>
+    <h2>AI Safety Module — Thermal Runaway Prevention</h2>
+    <div class="section-divider"></div>
+  </div>
+  <div class="predict-grid">
+    <div class="safety-card glass" id="safety-panel">
+      <h3>🔴 Live Safety Status</h3>
+      <div class="safety-status-ring safe" id="safety-ring">
+        <span class="ring-icon">✅</span>
+        <span class="ring-label">SAFE</span>
+      </div>
+      <ul class="alert-list" id="alert-list">
+        <li class="alert-item info">ℹ️ All systems operating within safe parameters.</li>
+      </ul>
+    </div>
+    <div class="predict-card glass">
+      <h3>🧠 Why Batteries Explode & How AI Prevents It</h3>
+      <div style="font-size:0.86rem;line-height:1.8;color:var(--text-secondary)">
+        <p><strong style="color:var(--accent-red)">Thermal Runaway</strong> occurs when a lithium-ion cell's internal temperature rises beyond control:</p>
+        <ol style="padding-left:18px;margin:12px 0;display:flex;flex-direction:column;gap:6px">
+          <li>High current → heat buildup inside cell</li>
+          <li>Electrolyte decomposes → produces flammable gas</li>
+          <li>Gas expands → mechanical stress → cell rupture</li>
+          <li>Chain reaction → neighbouring cells ignite → <strong style="color:var(--accent-red)">explosion</strong></li>
+        </ol>
+        <p style="margin-top:10px"><strong style="color:var(--accent-cyan)">AI Prevention:</strong></p>
+        <ul style="padding-left:18px;margin:8px 0;display:flex;flex-direction:column;gap:4px">
+          <li>Real-time temperature &amp; voltage monitoring (ML model)</li>
+          <li>Anomaly detection using Random Forest classifier</li>
+          <li>Thermal risk score regression (0–100)</li>
+          <li>Auto cut-off if risk &gt; 75 or temp &gt; 65°C</li>
+          <li>Emergency alert broadcast to user &amp; operator</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- V2G & CARBON -->
+  <div class="section-header" style="margin-top:36px">
+    <span class="section-icon">🌱</span>
+    <h2>V2G &amp; Carbon Tracking</h2>
+    <div class="section-divider"></div>
+  </div>
+  <div class="v2g-grid" id="v2g-stats">
+    <div class="v2g-stat glass glass-hover">
+      <div class="v2g-icon" style="background:rgba(0,255,136,0.1)">🌿</div>
+      <div class="v2g-info">
+        <div class="v2g-val" id="v2g-today">--</div>
+        <div class="v2g-lbl">Today's CO₂ (kg)</div>
+      </div>
+    </div>
+    <div class="v2g-stat glass glass-hover">
+      <div class="v2g-icon" style="background:rgba(0,212,255,0.1)">📅</div>
+      <div class="v2g-info">
+        <div class="v2g-val" id="v2g-monthly">--</div>
+        <div class="v2g-lbl">Monthly CO₂ (kg)</div>
+      </div>
+    </div>
+    <div class="v2g-stat glass glass-hover">
+      <div class="v2g-icon" style="background:rgba(124,58,237,0.1)">🔁</div>
+      <div class="v2g-info">
+        <div class="v2g-val" id="v2g-saved">--</div>
+        <div class="v2g-lbl">V2G Saved (kg CO₂)</div>
+      </div>
+    </div>
+    <div class="v2g-stat glass glass-hover">
+      <div class="v2g-icon" style="background:rgba(0,255,136,0.1)">🌳</div>
+      <div class="v2g-info">
+        <div class="v2g-val" id="v2g-trees">--</div>
+        <div class="v2g-lbl">Equivalent Trees</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHATBOT -->
+  <div class="section-header" style="margin-top:36px">
+    <span class="section-icon">💬</span>
+    <h2>AI EV Assistant</h2>
+    <div class="section-divider"></div>
+  </div>
+  <div class="chatbot-card glass" style="max-width:680px">
+    <h3>🤖 Chat with your EV Assistant</h3>
+    <div class="chat-messages" id="chat-messages">
+      <div class="chat-bubble bot">👋 Hello! I'm your AI EV Assistant. Ask me about <strong>charging prices, battery health, nearest stations, thermal safety,</strong> or <strong>V2G</strong>!</div>
+    </div>
+    <div class="chat-input-row">
+      <input type="text" id="chat-input" placeholder="Ask about pricing, battery health, safety…" onkeydown="if(event.key==='Enter')sendChat()" />
+      <button class="chat-send-btn" onclick="sendChat()">Send ➤</button>
+    </div>
+  </div>
+
+</div><!-- /main-wrapper -->
+
+<!-- ── Footer ────────────────────────────────────────────────────────────── -->
+<footer class="footer">
+  <p>⚡ AI-Based Smart EV Charging Station &nbsp;·&nbsp; Powered by XGBoost · LSTM · Flask · Leaflet</p>
+  <p style="margin-top:4px">Built with 💙 for a Greener, Smarter Future</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

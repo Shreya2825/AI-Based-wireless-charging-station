@@ -1,0 +1,101 @@
+======================================================================
+  AI-BASED SMART EV CHARGING STATION — MODEL TRAINING PIPELINE
+======================================================================
+[DATA] Loaded 51,995 rows × 27 columns
+[FEAT] Feature engineering complete. Shape: (51995, 37)
+
+============================================================
+MODEL 1 — Battery Health Classifier (XGBoost / RF)
+============================================================
+  Accuracy : 99.70%
+  ROC-AUC  : 0.9990
+
+              precision    recall  f1-score   support
+
+        Poor       0.84      0.56      0.67        57
+        Good       1.00      1.00      1.00     10342
+
+    accuracy                           1.00     10399
+   macro avg       0.92      0.78      0.84     10399
+weighted avg       1.00      1.00      1.00     10399
+
+
+============================================================
+MODEL 2 — Load Predictor (XGBoost Regressor)
+============================================================
+  MAE  : 589.824 kW
+  RMSE : 801.280 kW
+  R²   : 0.7446  (74.46%)
+
+============================================================
+MODEL 3 — Dynamic Price Predictor (XGBoost Regressor)
+============================================================
+  MAE  : ₹0.5969/kWh
+  R²   : 0.9548  (95.48%)
+
+============================================================
+MODEL 4 — Priority Classifier (XGBoost Multi-class)
+============================================================
+  Accuracy : 90.45%
+
+              precision    recall  f1-score   support
+
+         Low       0.91      0.92      0.92      6107
+      Medium       0.89      0.88      0.88      4285
+        High       1.00      0.29      0.44         7
+
+    accuracy                           0.90     10399
+   macro avg       0.93      0.70      0.75     10399
+weighted avg       0.90      0.90      0.90     10399
+
+
+============================================================
+MODEL 5 — Overheating Detector / Safety Module (RF)
+============================================================
+  Accuracy : 100.00%
+  ROC-AUC  : 1.0000
+
+              precision    recall  f1-score   support
+
+      Normal       1.00      1.00      1.00     10191
+ Overheating       1.00      1.00      1.00       208
+
+    accuracy                           1.00     10399
+   macro avg       1.00      1.00      1.00     10399
+weighted avg       1.00      1.00      1.00     10399
+
+
+============================================================
+MODEL 6 — Thermal Risk Score Regressor (GBR)
+============================================================
+  R²   : 0.9335  (93.35%)
+  MAE  : 1.298
+
+============================================================
+MODEL 7 — LSTM Grid Demand Forecaster (TensorFlow/Keras)
+============================================================
+[SKIP] TensorFlow not available — skipping LSTM training
+
+============================================================
+MODEL 8 — Wireless Charging Efficiency (Ridge Regression)
+============================================================
+  R²   : 0.8916
+  MAE  : 2.002%
+[SAVE] Station info saved to 'stations_info.csv'
+
+[SAVE] All models saved to 'saved_models.pkl' (13.81 MB)
+
+======================================================================
+  TRAINING SUMMARY
+======================================================================
+  Battery Health Accuracy  : 99.70%
+  Load Prediction R²       : 74.46%
+  Price Prediction R²      : 95.48%
+  Priority Accuracy        : 90.45%
+  Overheating Accuracy     : 100.00%
+  Thermal Risk R²          : 93.35%
+  LSTM: Skipped
+  Wireless Efficiency R²   : 89.16%
+
+  Total training time      : 67.2s
+======================================================================
